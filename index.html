@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Grafik</title>
+  <!-- Firebase Libraries -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0"></script>
+
   <style>
     body {
       font-family: Arial;
@@ -52,13 +57,14 @@
       authDomain: "skripsi-fix-ce15a.firebaseapp.com",
       databaseURL: "https://skripsi-fix-ce15a-default-rtdb.firebaseio.com",
       projectId: "skripsi-fix-ce15a",
-      storageBucket: "skripsi-fix-ce15a.firebasestorage.app",
+      storageBucket: "skripsi-fix-ce15a.appspot.com",
       messagingSenderId: "277465765165",
       appId: "1:277465765165:web:b26c4852bc541ac2d46fa4"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
 
     const ctx = document.getElementById('grafik').getContext('2d');
     const chart = new Chart(ctx, {
@@ -119,8 +125,7 @@
           zoom: {
             pan: {
               enabled: true,
-              mode: 'xy',
-              modifierKey: null
+              mode: 'xy'
             },
             zoom: {
               wheel: { enabled: true },
@@ -134,24 +139,24 @@
     });
 
     function updateChart() {
-      db.ref('/log').once('value', (snapshot) => {
+      db.ref('/log').once('value').then((snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-    
+
         const sortedKeys = Object.keys(data).sort();
         const labels = [];
         const tegangan = [];
         const arus = [];
-    
+
         sortedKeys.forEach(key => {
-          const logItem = data[key];
-          if (logItem && logItem.tegangan !== undefined && logItem.arus !== undefined) {
+          const item = data[key];
+          if (item.tegangan !== undefined && item.arus !== undefined) {
             labels.push(key);
-            tegangan.push(parseFloat(logItem.tegangan));
-            arus.push(parseFloat(logItem.arus));
+            tegangan.push(parseFloat(item.tegangan));
+            arus.push(parseFloat(item.arus));
           }
         });
-    
+
         chart.data.labels = labels;
         chart.data.datasets[0].data = tegangan;
         chart.data.datasets[1].data = arus;
@@ -159,37 +164,25 @@
       });
     }
 
-    updateChart();
+    // Login ke Firebase
+    auth.signInWithEmailAndPassword("indravik@revisi.com", "donebang1")
+      .then(() => {
+        console.log("Login berhasil!");
+        updateChart(); // Panggil pertama kali
+        setInterval(updateChart, 50000); // Auto-refresh setiap 50 detik
+      })
+      .catch((error) => {
+        console.error("Login gagal:", error.message);
+      });
 
-    // Zoom controls
-    function zoomIn() {
-      chart.zoom(1.2);
-    }
-
-    function zoomOut() {
-      chart.zoom(0.8);
-    }
-
-    function resetZoom() {
-      chart.resetZoom();
-    }
-
-    // Pan (geser) controls
-    function panLeft() {
-      chart.pan({ x: -100, y: 0 });
-    }
-
-    function panRight() {
-      chart.pan({ x: 100, y: 0 });
-    }
-
-    function panUp() {
-      chart.pan({ x: 0, y: -50 });
-    }
-
-    function panDown() {
-      chart.pan({ x: 0, y: 50 });
-    }
+    // Zoom & Pan control functions
+    function zoomIn() { chart.zoom(1.2); }
+    function zoomOut() { chart.zoom(0.8); }
+    function resetZoom() { chart.resetZoom(); }
+    function panLeft() { chart.pan({ x: -100, y: 0 }); }
+    function panRight() { chart.pan({ x: 100, y: 0 }); }
+    function panUp() { chart.pan({ x: 0, y: -50 }); }
+    function panDown() { chart.pan({ x: 0, y: 50 }); }
   </script>
 </body>
 </html>
