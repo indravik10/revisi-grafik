@@ -169,7 +169,7 @@
       .then(() => {
         console.log("Login berhasil!");
         updateChart(); // Panggil pertama kali
-        setInterval(updateChart, 50000); // Auto-refresh setiap 50 detik
+        setInterval(updateChart, 10000); // Auto-refresh setiap 10 detik
       })
       .catch((error) => {
         console.error("Login gagal:", error.message);
