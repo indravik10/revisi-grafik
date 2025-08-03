@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Grafik</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0"></script>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+    }
+    canvas {
+      max-width: 90vw;
+      max-height: 70vh;
+    }
+    .controls {
+      margin: 10px;
+    }
+    .controls button {
+      font-size: 18px;
+      margin: 5px;
+      padding: 6px 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Switch Mode Power Supply</h2>
+
+  <!-- Tombol Zoom -->
+  <div class="controls">
+    <button onclick="zoomOut()">−</button>
+    <button onclick="resetZoom()">Reset Zoom</button>
+    <button onclick="zoomIn()">+</button>
+  </div>
+
+  <!-- Tombol Geser -->
+  <div class="controls">
+    <button onclick="panLeft()">⬅️</button>
+    <button onclick="panRight()">➡️</button>
+    <button onclick="panUp()">⬆️</button>
+    <button onclick="panDown()">⬇️</button>
+  </div>
+
+  <canvas id="grafik"></canvas>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhUDp6pjiRMMNonUbFQ7ez7DUezyOj4CM",
+      authDomain: "skripsi-fix-ce15a.firebaseapp.com",
+      databaseURL: "https://skripsi-fix-ce15a-default-rtdb.firebaseio.com",
+      projectId: "skripsi-fix-ce15a",
+      storageBucket: "skripsi-fix-ce15a.firebasestorage.app",
+      messagingSenderId: "277465765165",
+      appId: "1:277465765165:web:b26c4852bc541ac2d46fa4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const ctx = document.getElementById('grafik').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Tegangan (V)',
+            borderColor: 'blue',
+            data: [],
+            yAxisID: 'y-tegangan',
+            tension: 0.3,
+            fill: false
+          },
+          {
+            label: 'Arus (I)',
+            borderColor: 'orange',
+            data: [],
+            yAxisID: 'y-arus',
+            tension: 0.3,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          'y-tegangan': {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Tegangan (V)'
+            },
+            min: 13,
+            max: 14.5
+          },
+          'y-arus': {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Arus (I)'
+            },
+            min: 0,
+            max: 2,
+            grid: {
+              drawOnChartArea: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'xy',
+              modifierKey: null
+            },
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'x',
+              drag: { enabled: false }
+            }
+          }
+        }
+      }
+    });
+
+    function updateChart() {
+      db.ref('/log').once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+    
+        const sortedKeys = Object.keys(data).sort();
+        const labels = [];
+        const tegangan = [];
+        const arus = [];
+    
+        sortedKeys.forEach(key => {
+          const logItem = data[key];
+          if (logItem && logItem.tegangan !== undefined && logItem.arus !== undefined) {
+            labels.push(key);
+            tegangan.push(parseFloat(logItem.tegangan));
+            arus.push(parseFloat(logItem.arus));
+          }
+        });
+    
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = tegangan;
+        chart.data.datasets[1].data = arus;
+        chart.update();
+      });
+    }
+
+    updateChart();
+
+    // Zoom controls
+    function zoomIn() {
+      chart.zoom(1.2);
+    }
+
+    function zoomOut() {
+      chart.zoom(0.8);
+    }
+
+    function resetZoom() {
+      chart.resetZoom();
+    }
+
+    // Pan (geser) controls
+    function panLeft() {
+      chart.pan({ x: -100, y: 0 });
+    }
+
+    function panRight() {
+      chart.pan({ x: 100, y: 0 });
+    }
+
+    function panUp() {
+      chart.pan({ x: 0, y: -50 });
+    }
+
+    function panDown() {
+      chart.pan({ x: 0, y: 50 });
+    }
+  </script>
+</body>
+</html>
