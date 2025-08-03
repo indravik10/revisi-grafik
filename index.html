@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Grafik</title>
+
   <!-- Firebase Libraries -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -64,7 +64,6 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth();
 
     const ctx = document.getElementById('grafik').getContext('2d');
     const chart = new Chart(ctx, {
@@ -164,18 +163,23 @@
       });
     }
 
-    // Login ke Firebase
-    auth.signInWithEmailAndPassword("indravik@revisi.com", "donebang1")
-      .then(() => {
-        console.log("Login berhasil!");
-        updateChart(); // Panggil pertama kali
-        setInterval(updateChart, 60000); // Auto-refresh setiap 10 detik
-      })
-      .catch((error) => {
-        console.error("Login gagal:", error.message);
-      });
+    // Deteksi perubahan pada /monitoring/reset
+    db.ref('/monitoring/reset').on('value', (snapshot) => {
+      const value = snapshot.val();
+      if (value === "1" || value === 1) {
+        // Reset grafik
+        chart.data.labels = [];
+        chart.data.datasets.forEach(dataset => dataset.data = []);
+        chart.update();
+        resetZoom();
+      }
+    });
 
-    // Zoom & Pan control functions
+    // Auto-update setiap 1 menit
+    updateChart(); // Panggilan awal
+    setInterval(updateChart, 60000); // 1 menit (60000 ms)
+
+    // Fungsi kontrol Zoom & Pan
     function zoomIn() { chart.zoom(1.2); }
     function zoomOut() { chart.zoom(0.8); }
     function resetZoom() { chart.resetZoom(); }
